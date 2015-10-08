@@ -56,5 +56,3 @@ wraper=function(r,cut=180){
     
   return(res)
 }
-
-# plot many to one

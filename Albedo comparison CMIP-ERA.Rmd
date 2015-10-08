@@ -1,10 +1,9 @@
 ---
 title: "Monthly albedo comparison of CMIP and ERA datasets"
 author: "Ben Müller"
-date: "8. Oktober 2015"
-output:
-  html_document:
-    keep_md: yes
+output: 
+  pdf_document: 
+    keep_tex: yes
 ---
 
 ## Analysis
@@ -16,7 +15,7 @@ Setting the operating directories for CMIP and ERA-interim data ...
 ```{r,echo=T,message=F,warning=F,tidy=TRUE}
 ##### Operating directories #####
 
-WD.CMIP="MPI-M.CMIP5.AMIP\\Amon\\r3i1p1"
+WD.CMIP="MPI-M.CMIP5.AMIP\\Amon\\r2i1p1"
 
 WD.ERA="ERA-Interim"
 ```
@@ -38,18 +37,21 @@ source('Main.R')
   
 ***
   
-### Overview on the datasets and their differences
+### Overview on the datasets ...
 
-```{r,echo=F,message=F,warning=F,fig.width=9.2/2,fig.show='hold'}
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold'}
 # plot overview
-spplot(mean(Sets$CMIP),at=seq(0,1,l=21),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("gray11","lightgoldenrod3","khaki1"))(21),main="CMIP mean albedo")
-
-spplot(mean(Sets$ERA),at=seq(0,1,l=21),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("gray11","lightgoldenrod3","khaki1"))(21),main="ERA mean albedo")
+spplot(stack(list(CMIP=mean(Sets$CMIP),ERA=mean(Sets$ERA))),at=seq(0,1,l=21),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("gray11","lightgoldenrod3","khaki1"))(21),main="temporal mean of albedo")
 ```
+  
+### ... and their differences
 
 ```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
 spplot(mean(Sets$CMIP)-mean(Sets$ERA),at=seq(-1,1,l=40),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(40),main="difference of mean albedo (CMIP-ERA)")
 ```
+  
+  
+  
   
 ***
 
@@ -107,14 +109,99 @@ names(fnum)=c("minimum","lower hinge","median","upper hinge","maximum")
 
 fnum=stack(unstack(fnum)[5:1])
 
-spplot(fnum,at=seq(-1,1,l=101),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(100),colorkey=list(space=c("bottom")),layout = c(1, 5),scales = list(tick.number=5,draw = TRUE),main="distribution of spatial minima, maxima, boxplot-like hinge levels and median of differences between CMIP and ERA [CMIP-ERA]")
+spplot(fnum,at=seq(-1,1,l=101),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(100),colorkey=list(space=c("bottom")),layout = c(1, 5),scales = list(tick.number=5,draw = TRUE),main=c("distribution of spatial minima, maxima, boxplot-like hinge levels and median \n of differences between CMIP and ERA [CMIP-ERA]"))
 ```
     
 Mapped boxplot-like calculations of pixel-wise time series data of differences between CMIP and ERA.
   
 ***
   
+### Spatial aggregated temporal differences between CMIP and ERA ...
+  
+#### ... by continent
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+# cut differences by continents
+
+Diff=Sets$CMIP-Sets$ERA
+
+CONT.Dif=extract(Diff,cont)
+CONT.TS=as.data.frame(lapply(CONT.Dif,colMeans,na.rm=T))
+colnames(CONT.TS)=cont$REGION
+
+layout(
+  matrix(
+    c(2,2,2,1,1),ncol=5
+  )
+)
+
+cols=c("#6712D3","#4599A2","#237B33","#B312B3","#41D461","#991212","#AABA52")
+par(mar=c(0,0,0,1))
+plot(cont,col=cols)
+par(mar=c(5,7,3,0))
+boxplot(CONT.TS,horizontal=T,border=cols,xlab="d(albedo) [CMIP-ERA]",yaxt="n",xaxt="n",main="differences of albedo from CMIP and ERA per continent")
+axis(2,at=1:length(cont$REGION),labels=cont$REGION,las=1)
+axis(1,at=pretty(range(CONT.TS),n=10))
+```
+
+#### ... by latitude
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+# cut differences by latitude
+
+# climes
+#     tropics: 0°-23.5°
+#     subtropics: 23.5°-40°
+#     temperate: 40°-60°
+#     cold: 60°-90°
+
+clnames=c("N cold","N temperate","N subtropics", "N tropics", "S tropics","S subtropics","S temperate","S cold" )
+
+Nco=rbind(c(-180,60),c(180,60),c(180,90),c(-180,90))
+Nte=rbind(c(-180,60),c(180,60),c(180,40),c(-180,40))
+Nsu=rbind(c(-180,23.5),c(180,23.5),c(180,40),c(-180,40))
+Ntr=rbind(c(-180,23.5),c(180,23.5),c(180,0),c(-180,0))
+Sco=rbind(c(-180,-60),c(180,-60),c(180,-90),c(-180,-90))
+Ste=rbind(c(-180,-60),c(180,-60),c(180,-40),c(-180,-40))
+Ssu=rbind(c(-180,-23.5),c(180,-23.5),c(180,-40),c(-180,-40))
+Str=rbind(c(-180,-23.5),c(180,-23.5),c(180,0),c(-180,0))
+
+
+
+climes=SpatialPolygons(list(Polygons(list(Polygon(Nco)),1),
+                            Polygons(list(Polygon(Nte)),2),
+                            Polygons(list(Polygon(Nsu)),3),
+                            Polygons(list(Polygon(Ntr)),4),
+                            Polygons(list(Polygon(Str)),5),
+                            Polygons(list(Polygon(Ssu)),6),
+                            Polygons(list(Polygon(Ste)),7),
+                            Polygons(list(Polygon(Sco)),8)))
+
+LAT.Dif=extract(Diff,climes)
+LAT.TS=as.data.frame(lapply(LAT.Dif,colMeans,na.rm=T))
+colnames(LAT.TS)=clnames
+
+layout(
+  matrix(
+    c(2,2,2,1,1),ncol=5
+  )
+)
+
+cols=c("#6712D3","#BBCCAA","#237B33","#B312B3","#41D461","#991212","#AABA52","#4599A2")
+par(mar=c(0,0,0,1))
+plot(climes,col=cols)
+plot(cont,add=T)
+par(mar=c(5,7,3,0))
+boxplot(LAT.TS[,ncol(LAT.TS):1],horizontal=T,border=rev(cols),xlab="d(albedo) [CMIP-ERA]",yaxt="n",xaxt="n",main="differences of albedo from CMIP and ERA per clime")
+axis(2,at=1:length(clnames),labels=rev(clnames),las=1)
+axis(1,at=pretty(range(LAT.TS),n=10))
+```
+  
+***
+  
 ### Coefficient of variation (COV) for CMIP and ERA
+
+The coefficient of variation is calculated as: $\sigma \over \mu$
   
 #### Time series of spatial COV
 
@@ -146,27 +233,6 @@ sd.ERA=calc(Sets$ERA,sd)
 mean.ERA=calc(Sets$ERA,mean)
 
 spplot(stack(list(COV.CMIP=sd.CMIP/mean.CMIP,COV.ERA=sd.ERA/mean.ERA)),at=seq(0,1.5,l=101),col.regions=colorRampPalette(c("#226422","#FFFF22","#642222"))(100),colorkey=list(space=c("bottom")),scales = list(tick.number=5,draw = TRUE),main="coefficients of variations for the time series")
-
-```
-  
-***
-  
-### Spatial aggregated temporal differences between CMIP and ERA 
-  
-#### By continent
-
-```{r}
-# cut differences by continents
-
-Diff=Sets$CMIP-Sets$ERA
-
-DF=data.frame(region=cont$REGION,)
-```
-
-
-#### By latitude
-
-```{r}
 
 ```
 
