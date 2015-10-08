@@ -1,0 +1,172 @@
+---
+title: "Monthly albedo comparison of CMIP and ERA datasets"
+author: "Ben Müller"
+date: "8. Oktober 2015"
+output:
+  html_document:
+    keep_md: yes
+---
+
+## Analysis
+
+### Basic calculations for CMIP and ERA-Interim data
+
+Setting the operating directories for CMIP and ERA-interim data ...
+
+```{r,echo=T,message=F,warning=F,tidy=TRUE}
+##### Operating directories #####
+
+WD.CMIP="MPI-M.CMIP5.AMIP\\Amon\\r3i1p1"
+
+WD.ERA="ERA-Interim"
+```
+
+and run *source('Main.R')* will start the preprocessing, including:
+
+* loading monthly CMIP data for upwelling and downwelling short wave data,
+* calculating albedo from the ratio of shortwave data,
+* if necessary, aggregating daily ERA-Interim albedo data at 12:00 am to monthly data,
+* loading monthly ERA-Interim albedo data,
+* adjusting the resolution of the finer ERA-Interim data to the coarser CMIP data,
+* masking data that is NA in one of the datasets, and
+* wraping data to center the maps on the Atlantic ocean.
+
+```{r,echo=F,message=F,warning=F,tidy=T,comment=""}
+# source the preprocessing
+source('Main.R')
+```
+  
+***
+  
+### Overview on the datasets and their differences
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2/2,fig.show='hold'}
+# plot overview
+spplot(mean(Sets$CMIP),at=seq(0,1,l=21),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("gray11","lightgoldenrod3","khaki1"))(21),main="CMIP mean albedo")
+
+spplot(mean(Sets$ERA),at=seq(0,1,l=21),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("gray11","lightgoldenrod3","khaki1"))(21),main="ERA mean albedo")
+```
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+spplot(mean(Sets$CMIP)-mean(Sets$ERA),at=seq(-1,1,l=40),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(40),main="difference of mean albedo (CMIP-ERA)")
+```
+  
+***
+
+### Spatially aggregated differences analysis in the time series of CMIP and ERA
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+# plot timeseries of differences
+
+diff.df=na.omit(as.data.frame(Sets$CMIP-Sets$ERA))
+
+DF.var=data.frame(t(data.frame(lapply(diff.df,fivenum))))
+meaning=c("minimum","lower hinge","median","upper hinge","maximum")
+colnames(DF.var)=meaning
+DF.var=cbind(date=as.Date(paste(names(Sets[[1]]),"15",sep="."),"X%Y.%m.%d"),DF.var)
+
+layout(matrix(
+  c(
+    1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,2,2,1,
+    1,1,1,1,1,1,2,2,1,
+    1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1
+  ),byrow=T,ncol=9
+))
+
+par(mar=c(5,5,3,7))
+plot(DF.var$date,DF.var$median,xaxs="i",type="l",ylim=c(min(DF.var[,-1]),max(DF.var[,-1])),col="white",xlab="time [months]",ylab="d(albedo) [CMIP-ERA]",main="time series of spatially averaged monthly differences in albedo (CMIP-ERA)",cex.main=1.3,cex.lab=1.3)
+polygon(c(DF.var$date,rev(DF.var$date)),c(DF.var$minimum,rev(DF.var$maximum)),col="#EE000030",border=NA)
+polygon(c(DF.var$date,rev(DF.var$date)),c(DF.var$`lower hinge`,rev(DF.var$`upper hinge`)),col="#EE000070",border=NA)
+lines(DF.var$date,DF.var$median,col="black")
+legend("left",legend=c("median","hinges","max/min"),horiz = T,col=c("black","#EE000079","#EE000030"),lty=c(1,NA,NA),pch=c(NA,15,15),pt.cex=4,inset=0.1,cex=1.3)
+
+DF.var.ltm=aggregate(DF.var[,-1],list(strftime(DF.var$date, "%m")),mean)
+names(DF.var.ltm)[1]="date"
+
+par(mar=c(5,4,2,1))
+plot(DF.var.ltm$date,DF.var.ltm$median,xaxs="i",yaxs="i",type="l",xlim=c(1,12),ylim=0.05*c(-1,1)+c(min(DF.var.ltm[,-1]),max(DF.var.ltm[,-1])),col="white",xlab="",ylab="",main="monthly mean",cex.main=1.3,cex.lab=1.3)
+polygon(c(1,12,12,1),0.05*c(-1,-1,1,1)+c(rep(min(DF.var.ltm[,-1]),2),rep(max(DF.var.ltm[,-1]),2)),col="white")
+polygon(c(DF.var.ltm$date,rev(DF.var.ltm$date)),c(DF.var.ltm$minimum,rev(DF.var.ltm$maximum)),col="#EE000030",border=NA)
+polygon(c(DF.var.ltm$date,rev(DF.var.ltm$date)),c(DF.var.ltm$`lower hinge`,rev(DF.var.ltm$`upper hinge`)),col="#EE000070",border=NA)
+lines(DF.var.ltm$date,DF.var.ltm$median,col="black")
+```
+  
+The time steps are aggregated in spatial means of differences and boxplot-like calculations lead to the determination of the hinges.
+  
+***
+
+### Temporally differences between CMIP and ERA as maps of boxplot-like occurence
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.height=20,fig.show='hold',fig.align='center'}
+# plot boxplot-like maps of time series 
+
+fnum=calc((Sets$CMIP-Sets$ERA),fivenum)
+names(fnum)=c("minimum","lower hinge","median","upper hinge","maximum")
+
+fnum=stack(unstack(fnum)[5:1])
+
+spplot(fnum,at=seq(-1,1,l=101),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(100),colorkey=list(space=c("bottom")),layout = c(1, 5),scales = list(tick.number=5,draw = TRUE),main="distribution of spatial minima, maxima, boxplot-like hinge levels and median of differences between CMIP and ERA [CMIP-ERA]")
+```
+    
+Mapped boxplot-like calculations of pixel-wise time series data of differences between CMIP and ERA.
+  
+***
+  
+### Coefficient of variation (COV) for CMIP and ERA
+  
+#### Time series of spatial COV
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+# COV for time series
+
+sd.CMIP=unlist(lapply(lapply(unstack(Sets$CMIP),"["),sd,na.rm=T))
+mean.CMIP=unlist(lapply(lapply(unstack(Sets$CMIP),"["),mean,na.rm=T))
+
+sd.ERA=unlist(lapply(lapply(unstack(Sets$ERA),"["),sd,na.rm=T))
+mean.ERA=unlist(lapply(lapply(unstack(Sets$ERA),"["),mean,na.rm=T))
+
+DF.COV=data.frame(date=as.Date(paste(names(Sets[[1]]),"15",sep="."),"X%Y.%m.%d"),COV.CMIP=sd.CMIP/mean.CMIP,COV.ERA=sd.ERA/mean.ERA)
+
+plot(DF.COV$date,DF.COV$COV.CMIP,xaxs="i",type="l",ylim=c(min(DF.COV[,-1]),max(DF.COV[,-1])),col="blue",lwd=2,xlab="time [months]",ylab="albedo",main="time series of spatially aggregated COV",cex.main=1.3,cex.lab=1.3)
+lines(DF.var$date,DF.COV$COV.ERA,col="red",lwd=2)
+legend("left",legend=c("CMIP","ERA"),horiz = T,col=c("blue","red"),lwd=c(2,2),inset=0.1,cex=1.3)
+```
+    
+#### Maps of temporal COV
+
+```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
+# spatial COV
+
+sd.CMIP=calc(Sets$CMIP,sd)
+mean.CMIP=calc(Sets$CMIP,mean)
+
+sd.ERA=calc(Sets$ERA,sd)
+mean.ERA=calc(Sets$ERA,mean)
+
+spplot(stack(list(COV.CMIP=sd.CMIP/mean.CMIP,COV.ERA=sd.ERA/mean.ERA)),at=seq(0,1.5,l=101),col.regions=colorRampPalette(c("#226422","#FFFF22","#642222"))(100),colorkey=list(space=c("bottom")),scales = list(tick.number=5,draw = TRUE),main="coefficients of variations for the time series")
+
+```
+  
+***
+  
+### Spatial aggregated temporal differences between CMIP and ERA 
+  
+#### By continent
+
+```{r}
+# cut differences by continents
+
+Diff=Sets$CMIP-Sets$ERA
+
+DF=data.frame(region=cont$REGION,)
+```
+
+
+#### By latitude
+
+```{r}
+
+```
+

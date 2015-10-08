@@ -1,0 +1,2 @@
+cd W:/iP.ALEX/R/Albedo_CMIP
+cdo monavg ERA-Interim/ERAINT-197901-200812-detailed-12.nc ERA-Interim/ERAINT-197901-200812-detailed-12.nc_agg
