@@ -5,7 +5,15 @@ Ben Müller
 
 ### Basic calculations for CMIP and ERA-Interim data
 
-Setting the operating directories for CMIP and ERA-interim data ...
+* CMIP and ERA-Interim files are expected as NETCD-files ("*.nc") in the code directories.
+
+* CMIP data is expected to be available as two files: **"rsus"** for upwelling short wave radiation and **"rsds"** for downwelling short wave radiation.
+
+* ERA-Interim is either daily values or aggregated monthly values. If there is only one file, it is assumed to be daily and aggregation is initiated. The monthly data is supposed to be marked with **"agg"**.
+
+* Cygwin and installed CDO is needed for aggregation of ERA-Interim files!
+
+Setting the operating directories for CMIP and ERA-interim data and the path to cygwin ...
 
 
 ```r
@@ -14,6 +22,9 @@ Setting the operating directories for CMIP and ERA-interim data ...
 WD.CMIP = "MPI-M.CMIP5.AMIP\\Amon\\r2i1p1"
 
 WD.ERA = "ERA-Interim"
+# on the repository, only the aggregated file is saved due to space issues
+
+cygwin = "S:\\cygwincdo\\bin\\bash.exe"
 ```
 
 and run *source('Main.R')* will start the preprocessing, including:
@@ -29,22 +40,22 @@ and run *source('Main.R')* will start the preprocessing, including:
 
 ```
 Get CMIP: 
-Time difference of 8.98 secs
+Time difference of 9.077723 secs
 
 Get ERA: 
-Time difference of 0.09200001 secs
+Time difference of 0.09202695 secs
 
 Adjust resolution: 
-Time difference of 19.203 secs
+Time difference of 19.3228 secs
 
 Mask data: 
-Time difference of 2.399 secs
+Time difference of 2.39972 secs
 
 Wrap data: 
-Time difference of 15.136 secs
+Time difference of 15.09153 secs
 
 Do all: 
-Time difference of 46.383 secs
+Time difference of 46.55796 secs
 ```
   
 ***

@@ -8,14 +8,25 @@ output: pdf_document
 
 ### Basic calculations for CMIP and ERA-Interim data
 
-Setting the operating directories for CMIP and ERA-interim data ...
+* CMIP and ERA-Interim files are expected as NETCD-files ("*.nc") in the code directories.
+
+* CMIP data is expected to be available as two files: **"rsus"** for upwelling short wave radiation and **"rsds"** for downwelling short wave radiation.
+
+* ERA-Interim is either daily values or aggregated monthly values. If there is only one file, it is assumed to be daily and aggregation is initiated. The monthly data is supposed to be marked with **"agg"**.
+
+* Cygwin and installed CDO is needed for aggregation of ERA-Interim files!
+
+Setting the operating directories for CMIP and ERA-interim data and the path to cygwin ...
 
 ```{r,echo=T,message=F,warning=F,tidy=TRUE}
 ##### Operating directories #####
 
 WD.CMIP="MPI-M.CMIP5.AMIP\\Amon\\r2i1p1"
 
-WD.ERA="ERA-Interim"
+WD.ERA="ERA-Interim" 
+# on the repository, only the aggregated file is saved due to space issues
+
+cygwin="S:\\cygwincdo\\bin\\bash.exe"
 ```
 
 and run *source('Main.R')* will start the preprocessing, including:
@@ -45,7 +56,7 @@ spplot(stack(list(CMIP=mean(Sets$CMIP),ERA=mean(Sets$ERA))),at=seq(0,1,l=21),col
 ### ... and their differences
 
 ```{r,echo=F,message=F,warning=F,fig.width=9.2,fig.show='hold',fig.align='center'}
-spplot(mean(Sets$CMIP)-mean(Sets$ERA),at=seq(-1,1,l=40),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(40),main="difference of mean albedo (CMIP-ERA)")
+spplot(mean(Sets$CMIP)-mean(Sets$ERA),at=seq(-1,1,l=40),colorkey=list(space="bottom"),scales = list(tick.number=5,draw = TRUE),col.regions=colorRampPalette(c("darkblue","blue","grey90","red","darkred"))(40),main="difference of mean albedo [CMIP-ERA]")
 ```
   
   
@@ -76,7 +87,7 @@ layout(matrix(
 ))
 
 par(mar=c(5,5,3,7))
-plot(DF.var$date,DF.var$median,xaxs="i",type="l",ylim=c(min(DF.var[,-1]),max(DF.var[,-1])),col="white",xlab="time [months]",ylab="d(albedo) [CMIP-ERA]",main="time series of spatially averaged monthly differences in albedo (CMIP-ERA)",cex.main=1.3,cex.lab=1.3)
+plot(DF.var$date,DF.var$median,xaxs="i",type="l",ylim=c(min(DF.var[,-1]),max(DF.var[,-1])),col="white",xlab="time [months]",ylab="d(albedo) [CMIP-ERA]",main="time series of spatially averaged monthly differences in albedo [CMIP-ERA]",cex.main=1.3,cex.lab=1.3)
 polygon(c(DF.var$date,rev(DF.var$date)),c(DF.var$minimum,rev(DF.var$maximum)),col="#EE000030",border=NA)
 polygon(c(DF.var$date,rev(DF.var$date)),c(DF.var$`lower hinge`,rev(DF.var$`upper hinge`)),col="#EE000070",border=NA)
 lines(DF.var$date,DF.var$median,col="black")
