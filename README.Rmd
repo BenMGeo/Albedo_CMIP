@@ -1,7 +1,9 @@
 ---
 title: "Monthly albedo comparison of CMIP and ERA datasets"
 author: "Ben Müller"
-output: pdf_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ## Analysis
