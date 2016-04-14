@@ -1,4 +1,4 @@
-# Main script
+﻿# Main script tested to git from linux
 
 # libraries
 require(raster)
